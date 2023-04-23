@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "mysql": "^2.18.1",
+    "passport-google-oauth20": "^2.0.0"
+  }
+}

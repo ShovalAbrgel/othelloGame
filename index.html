@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="./client_tools.js"></script>
+    <script> let exports = {}; </script>
+    <script src="./othelloGame.js"></script>
+    <title>Othello</title>
+
+    <style>
+
+    </style>
+    <script>
+        let txtUserName, txtPassword;
+        let pLoginInfo;
+        let divLogin, divLobby, divGame, divRules;
+        let divUsersInLobby;
+        let lblGameId;
+        let divBoard;
+        let turnPlayers;
+        let cells = [];
+        let isGameOver = false;
+        let theRules;
+        let rulesAppended = false;
+        let backToTheGame;
+        let isBack = false;
+        let timer;
+        let timer_interval;
+        let isTimerRunning = false;
+        let whiteScore = 2;
+        let blackScore = 2;
+        let scoreBlackCount;
+        let scoreWhiteCount;
+
+        function init() {
+            txtUserName = document.getElementById("txtUserName");
+            txtPassword = document.getElementById("txtPassword");
+            pLoginInfo = document.getElementById("pLoginInfo");
+            divLobby = document.getElementById("divLobby");
+            divLogin = document.getElementById("divLogin");
+            divUsersInLobby = document.getElementById("divUsersInLobby");
+            lblGameId = document.getElementById("lblGameId");
+            divGame = document.getElementById("divGame");
+            timer = document.getElementById('timer');
+            divBoard = document.getElementById('divBoard');
+            turnPlayers = document.getElementById('turnPlayers');
+            divRules = document.getElementById('divRules');
+            theRules = document.getElementById('theRules');
+            backToTheGame = document.getElementById('backToTheGame');
+            scoreBlackCount = document.getElementById('scoreBlackCount');
+            scoreWhiteCount = document.getElementById('scoreWhiteCount');
+
+        
+            
+
+
+
+
+            for (let i = 0; i < 64; i++) {
+                let divCell = document.createElement('div');
+                divCell.className = 'divCell';
+                cells.push(divCell);
+                divCell.onclick = () => {
+                    sendHttpGetRequest('api/play_othello?username=' + username + '&password=' + password + '&id=' + gameId + '&cell=' + i, (response) => {
+                        if(response) {
+                    let data = JSON.parse(response);
+                    if (data.winner) {
+                        alert('The winner is ' + data.winner + '!');
+                    } else {
+                        alert("drwe");
+                    }
+                } else {
+            
+            }
+        });
+    };
+    divBoard.appendChild(divCell);
+}
+}
+
+
+        function btnLoginSignupClicked(loginOrSignup) {
+            username = txtUserName.value;
+            password = txtPassword.value;
+            if (!username || !password) return;
+            let elements = document.getElementsByClassName('lock');
+            for (let e in elements) {
+                e.disabled = true;
+            }
+            pLoginInfo.innerHTML = "";
+            sendHttpGetRequest('api/' + loginOrSignup + '?username=' + username + '&password=' + password, (response) => {
+                for (let e in elements) {
+                    e.disabled = false;
+                }
+                if (response == "ok") {
+                    show(divLobby);
+                    getLobby();
+                } else if (response == "invalid") {
+                    pLoginInfo.innerHTML = "invalid username or password.";
+                } else if (response == "taken") {
+                    pLoginInfo.innerHTML = "username already taken.";
+                } else {
+                    //TODO: think about problem that can be.
+                }
+            });
+        }
+
+
+        function getLobby() {
+            sendHttpGetRequest('api/lobby?username=' + username + "&password=" + password, (response) => {
+                let usersInLobby = JSON.parse(response);
+                removeAllChildNodes(divUsersInLobby);
+                let existsInList = false;
+                for (let i = 0; i < usersInLobby.length; i++) {
+                    if (usersInLobby[i].username == username) {
+                        existsInList = true;
+                        continue;
+                    }
+                    let p = document.createElement('p');
+                    p.innerHTML = usersInLobby[i].username;
+                    p.style.color = "green";
+                    p.style.fontSize = "20px";
+                    p.style.textAlign = "center";
+                    p.style.cursor = "pointer";
+                    divUsersInLobby.appendChild(p);
+                    p.onclick = (event) => {
+                        let partner = event.target.innerHTML;
+                        sendHttpGetRequest('api/start_game?username=' + username + "&password=" + password + "&partner=" + partner, (response) => {
+                            if (response === "error") {
+                                console.log(response);
+                                console.log("error, try again");
+                            } else {
+                                show(divGame);
+                            }
+
+
+                        });
+
+                    };
+                }
+
+                if (existsInList) {
+                    setTimeout(getLobby, 500);
+                } else {
+                    sendHttpGetRequest('api/get_game_id?username=' + username + '&password=' + password, (response) => {
+                        if (response) {
+                            gameId = parseInt(response);
+                            lblGameId.innerHTML = "your game id is: " + gameId;
+                            show(divGame);
+                            getGameStatus();
+                        }
+                    });
+                }
+            });
+        }
+
+
+
+
+        function btnLeaveGameClicked() {
+            let elements = document.getElementsByClassName("lock");
+            for (let e in elements) {
+                e.disabled = true;
+            }
+            sendHttpGetRequest('api/leave_game?username=' + username + '&password=' + password, (response) => {
+                for (let e in elements) {
+                    e.disabled = false;
+                }
+                if (response == "ok") {
+                    show(divLobby);
+                    getLobby();
+                }
+            });
+        }
+
+
+        function btnShowRules() {
+            show(divRules);
+            if (!rulesAppended) {
+                theRules.style.display = 'block';
+                backToTheGame.style.display = 'block';
+                divRules.appendChild(backToTheGame);
+                divRules.appendChild(theRules);
+                rulesAppended = true;
+            }
+        }
+
+        function btnBackGameClicked() {
+            show(divGame);
+            if (!isBack) {
+                theRules.style.display = 'none';
+                backToTheGame.style.display = 'none';
+                isBack = true;
+            } else {
+                backToTheGame.style.display = 'block';
+                theRules.style.display = 'block';
+
+
+            }
+        }
+
+        function btnStartGameClicked() {
+            if (isTimerRunning) return;
+            clearInterval(timer_interval);
+            let second = 0,
+                minute = 0,
+                hour = 0;
+            timer_interval = setInterval(function () {
+                timer.innerHTML =
+                    ("Time : ") +
+                    (minute < 10 ? "0" + minute : minute) + ":" +
+                    (second < 10 ? "0" + second : second);
+
+                second++;
+
+                if (second == 60) {
+                    minute++;
+                    second = 0;
+                }
+
+                if (minute == 60) {
+                    minute = 0;
+                }
+            }, 1000);
+        }
+
+        
+        function getGameStatus() {
+            sendHttpGetRequest('api/get_game_status?username=' + username + '&password=' + password + '&id=' + gameId, (response) => {
+                let gameStatus = JSON.parse(response);
+                if (gameStatus.game_active) {
+                    for (let i = 0; i < 64; i++) {
+                        let cellStatus = gameStatus.board[i];
+                        if (cellStatus == 0) {
+                            cells[i].innerHTML = "";
+                        } else if (cellStatus == 1) {
+                            cells[i].innerHTML = '<img src="black.png"/>';
+                        } else if (cellStatus == 2) {
+                            cells[i].innerHTML = '<img src="white.png"/>';
+
+                        }
+                    }
+                    canClickArrayGlobal = gameStatus.canClickArray;
+
+                    gameStatus.blackScore = 0;
+                    gameStatus.whiteScore = 0;
+                    for (let i = 0; i < gameStatus.board.length; i++) {
+                        if (gameStatus.board[i] === 1) {
+                            gameStatus.blackScore++;
+                        } else if (gameStatus.board[i] === 2) {
+                            gameStatus.whiteScore++;
+                        }
+                    }
+
+                
+
+                    scoreBlackCount.innerHTML = username + " your score is : " + gameStatus.blackScore;
+                    scoreWhiteCount.innerHTML = "White Player your score is : " + gameStatus.whiteScore;
+
+                    let turn = gameStatus.currentPlayer === username ? 'black' : 'white';
+                    let currentPlayer = gameStatus.currentPlayer === username ? username : username;
+
+
+                    if (gameStatus.currentPlayer === 'white') {
+                        currentPlayer = 'White Player';
+                    }
+
+                    document.getElementById('turn').textContent = 'Turn: ' + turn;
+                    document.getElementById('current-player').textContent = 'Current Player: ' + currentPlayer;
+
+
+                    setTimeout(getGameStatus, 500);
+                } else {
+                    show(divLobby);
+                    getLobby();
+                }
+            });
+        }
+
+        function show(element) {
+            let shown = document.getElementsByClassName('shown');
+            if (shown.length == 1) {
+                shown[0].classList.add('hidden');
+                shown[0].classList.remove('shown');
+            }
+            element.classList.add('shown');
+            element.classList.remove('hidden');
+
+        }
+
+        function onKeyUp(event) {
+            if (event.keyCode == 13) {
+                if (event.target == txtUserName)
+                    txtPassword.focus();
+                else if (event.target == txtPassword)
+                    btnLoginSignupClicked('login');
+            }
+        }
+
+        function removeAllChildNodes(node) {
+            while (node.firstChild)
+                node.removeChild(node.firstChild);
+
+        }
+
+    </script>
+
+</head>
+
+<body onload="init()">
+    <h1>Othello Game</h1>
+    <div id="divLogin" class="shown">
+        <h2>Login</h2>
+        <p>username: <input class="lock" id="txtUserName" type="text" onkeyup="onKeyUp(event)" /></p>
+        <p>password: <input class="lock" id="txtPassword" type="password" onkeyup="onKeyUp(event)" /></p>
+        <p><button class="lock" onclick="btnLoginSignupClicked('login')">login</button><button class="lock"
+                onclick="btnLoginSignupClicked('signup')">sign up</button></p>
+        <p> No registered user? Click on the Signup button!</p>
+        <p id="pLoginInfo"></p>
+    </div>
+
+    <div id="divLobby" class="hidden">
+        <h2>lobby</h2>
+        <div id="divUsersInLobby"></div>
+    </div>
+    <div id="divRules" class="hidden">
+        <h2>Game Rules:</h2>
+
+        <p id="theRules" style="display: none;">
+        <ol>
+
+            <li>Black always moves first.</li>
+            <li>Every game starts with four discs placed in the center of the board.</li>
+            <li>Each reversi piece has a black side and a white side. On your turn, you place one piece on the board
+                with your color facing up.
+                You must place the piece so that an opponent's piece, or a row of opponent's pieces, is flanked by your
+                pieces. All of the opponent's pieces between your pieces are then turned over to become your color.
+            </li>
+            <li>The game ends when:
+
+                One player wins, by making his color dominant on the board. </li>
+        </ol>
+        <p><button class="lock" id="backToTheGame" style="display: none;" onclick="btnBackGameClicked()">Click here back
+                to the game</button></p>
+
+        </p>
+    </div>
+
+    <div id="divGame" class="hidden">
+        <h2>Game</h2>
+        <p id="rules"><button id="btnRules" class="lock" onclick="btnShowRules()">Click here to see the game
+                rules!</button></p>
+        <p id="timer">Time : 00:00</p>
+
+        <p><button class="lock" id="btnStartGame" onclick="btnStartGameClicked()">start game</button></p>
+        <div class="info-text">
+            <p id="turn">Turn</p>
+            <p id="current-player">Current player</p>
+            <span id="scoreBlackCount">2</span>
+                </br>
+                </br>
+            <span id="scoreWhiteCount">2</span>
+            <p><button class="lock" id="btnLeaveGame" onclick="btnLeaveGameClicked()">leave game</button></p>
+        </div>
+        <p id="lblGameId"></p>
+        <div id="divBoard">
+
+        </div>
+
+</body>
+
+</html>
