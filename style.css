@@ -117,7 +117,7 @@ button:hover {
 .info-text {
   position: absolute;
   top: 60%;
-  left: 29%;
+  left: 30%;
   transform: translate(-50%, -50%);
   color: green;
   font-size: 20px;
@@ -261,8 +261,25 @@ li{
 }
 
 .valid-move{
-  background-color: yellow;
+  border-radius: 50%;
+  background-image: url('validMovesCircle.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
+
+
+#Pwinner{
+  text-align: center;
+  color: green;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+}
+
+
+
+
 
 
 

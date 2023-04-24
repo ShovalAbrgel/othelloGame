@@ -37,6 +37,8 @@
         let blackScore = 2;
         let scoreBlackCount;
         let scoreWhiteCount;
+        let Pwinner;
+
 
         function init() {
             txtUserName = document.getElementById("txtUserName");
@@ -55,36 +57,31 @@
             backToTheGame = document.getElementById('backToTheGame');
             scoreBlackCount = document.getElementById('scoreBlackCount');
             scoreWhiteCount = document.getElementById('scoreWhiteCount');
+            Pwinner = document.getElementById('Pwinner');
 
-        
-            
-
-
-
-
+            // Create and add 64 game board cells to the DOM
             for (let i = 0; i < 64; i++) {
                 let divCell = document.createElement('div');
                 divCell.className = 'divCell';
                 cells.push(divCell);
                 divCell.onclick = () => {
+                    // Send HTTP GET request to server to attempt to place a game piece
                     sendHttpGetRequest('api/play_othello?username=' + username + '&password=' + password + '&id=' + gameId + '&cell=' + i, (response) => {
-                        if(response) {
-                    let data = JSON.parse(response);
-                    if (data.winner) {
-                        alert('The winner is ' + data.winner + '!');
-                    } else {
-                        alert("drwe");
-                    }
-                } else {
-            
+                        if (response) {
+
+                        }
+                    });
+
+
+                };
+                divBoard.appendChild(divCell);
             }
-        });
-    };
-    divBoard.appendChild(divCell);
-}
-}
+        }
 
 
+
+
+        // Handle login and signup button clicks
         function btnLoginSignupClicked(loginOrSignup) {
             username = txtUserName.value;
             password = txtPassword.value;
@@ -111,7 +108,7 @@
             });
         }
 
-
+        //This function sends an HTTP GET request to the server to get the list of users in the lobby.
         function getLobby() {
             sendHttpGetRequest('api/lobby?username=' + username + "&password=" + password, (response) => {
                 let usersInLobby = JSON.parse(response);
@@ -129,6 +126,7 @@
                     p.style.textAlign = "center";
                     p.style.cursor = "pointer";
                     divUsersInLobby.appendChild(p);
+                    //allows the current user to start a game with another user by clicking on their name
                     p.onclick = (event) => {
                         let partner = event.target.innerHTML;
                         sendHttpGetRequest('api/start_game?username=' + username + "&password=" + password + "&partner=" + partner, (response) => {
@@ -148,10 +146,12 @@
                 if (existsInList) {
                     setTimeout(getLobby, 500);
                 } else {
+                    //sends HTTP GET request to the server to get their game ID and display it.
                     sendHttpGetRequest('api/get_game_id?username=' + username + '&password=' + password, (response) => {
                         if (response) {
                             gameId = parseInt(response);
                             lblGameId.innerHTML = "your game id is: " + gameId;
+                            //calls the getGameStatus() function to get the current status of the game. The function continues to call itself after a delay if the current user is still in the lobby.
                             show(divGame);
                             getGameStatus();
                         }
@@ -162,7 +162,7 @@
 
 
 
-
+        //Handle leave game button clicks
         function btnLeaveGameClicked() {
             let elements = document.getElementsByClassName("lock");
             for (let e in elements) {
@@ -179,7 +179,7 @@
             });
         }
 
-
+        //show the Rules of the game 
         function btnShowRules() {
             show(divRules);
             if (!rulesAppended) {
@@ -190,7 +190,7 @@
                 rulesAppended = true;
             }
         }
-
+        //go back to the game 
         function btnBackGameClicked() {
             show(divGame);
             if (!isBack) {
@@ -205,32 +205,7 @@
             }
         }
 
-        function btnStartGameClicked() {
-            if (isTimerRunning) return;
-            clearInterval(timer_interval);
-            let second = 0,
-                minute = 0,
-                hour = 0;
-            timer_interval = setInterval(function () {
-                timer.innerHTML =
-                    ("Time : ") +
-                    (minute < 10 ? "0" + minute : minute) + ":" +
-                    (second < 10 ? "0" + second : second);
-
-                second++;
-
-                if (second == 60) {
-                    minute++;
-                    second = 0;
-                }
-
-                if (minute == 60) {
-                    minute = 0;
-                }
-            }, 1000);
-        }
-
-        
+        //This function sends a GET request to the server to retrieve the current status of the game.
         function getGameStatus() {
             sendHttpGetRequest('api/get_game_status?username=' + username + '&password=' + password + '&id=' + gameId, (response) => {
                 let gameStatus = JSON.parse(response);
@@ -243,29 +218,35 @@
                             cells[i].innerHTML = '<img src="black.png"/>';
                         } else if (cellStatus == 2) {
                             cells[i].innerHTML = '<img src="white.png"/>';
-
                         }
                     }
-                    canClickArrayGlobal = gameStatus.canClickArray;
-
-                    gameStatus.blackScore = 0;
-                    gameStatus.whiteScore = 0;
+                    //updates the game board and displays the scores of the two players
+                    let blackScore = 0;
+                    let whiteScore = 0;
                     for (let i = 0; i < gameStatus.board.length; i++) {
                         if (gameStatus.board[i] === 1) {
-                            gameStatus.blackScore++;
+                            blackScore++;
                         } else if (gameStatus.board[i] === 2) {
-                            gameStatus.whiteScore++;
+                            whiteScore++;
                         }
                     }
 
-                
+                    // Get valid moves
+                    const validMoves = gameStatus.currentPlayer === username ? exports.validMoves(gameStatus.board, 1) : exports.validMoves(gameStatus.board, 2);
 
-                    scoreBlackCount.innerHTML = username + " your score is : " + gameStatus.blackScore;
-                    scoreWhiteCount.innerHTML = "White Player your score is : " + gameStatus.whiteScore;
+                    // Highlight valid move cells
+                    for (let i = 0; i < validMoves.length; i++) {
+                        cells[validMoves[i]].classList.add('valid-move');
+                    }
+
+                    let currentPlayerScore = blackScore;
+                    let opponentPlayerScore = whiteScore;
+
+                    scoreBlackCount.innerHTML = gameStatus.player_1 + " score: " + (gameStatus.currentPlayer === gameStatus.player_1 ? currentPlayerScore : opponentPlayerScore);
+                    scoreWhiteCount.innerHTML = gameStatus.player_2 + " score: " + (gameStatus.currentPlayer === gameStatus.player_2 ? currentPlayerScore : opponentPlayerScore);
 
                     let turn = gameStatus.currentPlayer === username ? 'black' : 'white';
                     let currentPlayer = gameStatus.currentPlayer === username ? username : username;
-
 
                     if (gameStatus.currentPlayer === 'white') {
                         currentPlayer = 'White Player';
@@ -274,7 +255,7 @@
                     document.getElementById('turn').textContent = 'Turn: ' + turn;
                     document.getElementById('current-player').textContent = 'Current Player: ' + currentPlayer;
 
-
+                    //The function then calls itself after a timeout of 500ms to repeatedly check for updates to the game status.
                     setTimeout(getGameStatus, 500);
                 } else {
                     show(divLobby);
@@ -282,7 +263,7 @@
                 }
             });
         }
-
+        //function is used to switch between different views or screens in the application.
         function show(element) {
             let shown = document.getElementsByClassName('shown');
             if (shown.length == 1) {
@@ -294,6 +275,7 @@
 
         }
 
+        //The onKeyUp function is an event handler function that is called when a key is released while the focus is on an input field
         function onKeyUp(event) {
             if (event.keyCode == 13) {
                 if (event.target == txtUserName)
@@ -302,7 +284,7 @@
                     btnLoginSignupClicked('login');
             }
         }
-
+        //The removeAllChildNodes function takes a DOM node as input and removes all of its child nodes.
         function removeAllChildNodes(node) {
             while (node.firstChild)
                 node.removeChild(node.firstChild);
@@ -356,15 +338,14 @@
         <h2>Game</h2>
         <p id="rules"><button id="btnRules" class="lock" onclick="btnShowRules()">Click here to see the game
                 rules!</button></p>
-        <p id="timer">Time : 00:00</p>
 
-        <p><button class="lock" id="btnStartGame" onclick="btnStartGameClicked()">start game</button></p>
+        <p id="Pwinner">The winner is the one who has the highest score!</p>
         <div class="info-text">
             <p id="turn">Turn</p>
             <p id="current-player">Current player</p>
             <span id="scoreBlackCount">2</span>
-                </br>
-                </br>
+            </br>
+            </br>
             <span id="scoreWhiteCount">2</span>
             <p><button class="lock" id="btnLeaveGame" onclick="btnLeaveGameClicked()">leave game</button></p>
         </div>

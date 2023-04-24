@@ -13,7 +13,7 @@ const apiFunctions = {
     '/leave_game' : api.leaveGame,
     '/get_game_id' : api.getGameId,
     '/get_game_status' : api.getStatus,
-    '/play_othello' : api.playOthello
+    '/play_othello' : api.playOthello,
 };
 
 http.createServer((req,res)=>{
