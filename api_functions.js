@@ -94,8 +94,9 @@ exports.startgame = (req, res, q) => {
     if (result.affectedRows == 2) {
       st.query("INSERT INTO games(player_1,player_2,currentPlayer, gameTurn) VALUES (?,?,?,?)", [username, partner, username, 1], (result, err) => {
         if (err) {
-          //add something
-          return;
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end("An error occurred while creating the new game. Please try again later.");
+          return;          
         }
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end("ok");
@@ -330,8 +331,8 @@ exports.leaveGame = (req, res, q) => {
   }
   st.query("SELECT id,player_1,player_2 FROM games WHERE (player_1=? OR player_2=?) AND game_active=1", [username, username], (result, err) => {
     if (err) {
-      //not now
-
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end("An error occurred while retrieving the active game. Please try again later.");
       return;
     }
     if (result.length >= 1) {
@@ -346,15 +347,15 @@ exports.leaveGame = (req, res, q) => {
 
       st.query("UPDATE games SET game_active=0 WHERE id=? AND game_active=1", [gameId], (result, err) => {
         if (err) {
-          //not now
-
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end("An error occurred while updating the game status. Please try again later.");
           return;
         }
         if (result.affectedRows == 1) {
           st.query("UPDATE users SET lobby=0 WHERE username IN (?,?)", [username, partner], (result, err) => {
             if (err) {
-              //not now
-
+              res.writeHead(500, { 'Content-Type': 'text/plain' });
+              res.end("An error occurred while updating the player's lobby status. Please try again later.");
               return;
             }
             res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -363,8 +364,8 @@ exports.leaveGame = (req, res, q) => {
         } else if (result.affectedRows == 0) {
           st.query("UPDATE users SET lobby=0 WHERE username = ?", [username], (result, err) => {
             if (err) {
-              //not now
-
+              res.writeHead(500, { 'Content-Type': 'text/plain' });
+              res.end("An error occurred while updating the player's lobby status. Please try again later.");
               return;
             }
             res.writeHead(200, { 'Content-Type': 'text/plain' });
