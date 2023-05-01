@@ -260,14 +260,6 @@ li{
   padding: 15px;
 }
 
-.valid-move{
-  border-radius: 50%;
-  background-image: url('validMovesCircle.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
 
 #Pwinner{
   text-align: center;
@@ -276,6 +268,31 @@ li{
   font-weight: bold;
   text-align: center;
 }
+
+/* Applies relative positioning to elements with the ".valid-move" class */
+.valid-move {
+  position: relative;
+}
+
+
+/*The "::before" pseudo-element is a CSS-generated content element that is added before the content of an element. It is commonly used to add decorative content to an element, such as icons or background images, without affecting the main content of the element.*/
+
+.valid-move::before {
+  /* Sets the content property to an empty string to create the pseudo element */
+  content: "";
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-30%, -30%);
+  width: 42px;
+  height: 42px;
+  background-image: url('validMovesCircle.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 
 
 

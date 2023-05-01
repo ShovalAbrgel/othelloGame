@@ -30,9 +30,6 @@
         let rulesAppended = false;
         let backToTheGame;
         let isBack = false;
-        let timer;
-        let timer_interval;
-        let isTimerRunning = false;
         let whiteScore = 2;
         let blackScore = 2;
         let scoreBlackCount;
@@ -49,7 +46,6 @@
             divUsersInLobby = document.getElementById("divUsersInLobby");
             lblGameId = document.getElementById("lblGameId");
             divGame = document.getElementById("divGame");
-            timer = document.getElementById('timer');
             divBoard = document.getElementById('divBoard');
             turnPlayers = document.getElementById('turnPlayers');
             divRules = document.getElementById('divRules');
@@ -239,6 +235,7 @@
                         cells[validMoves[i]].classList.add('valid-move');
                     }
 
+
                     let currentPlayerScore = blackScore;
                     let opponentPlayerScore = whiteScore;
 
@@ -254,6 +251,12 @@
 
                     document.getElementById('turn').textContent = 'Turn: ' + turn;
                     document.getElementById('current-player').textContent = 'Current Player: ' + currentPlayer;
+
+                    if (exports.isGameOver(gameStatus.board)) {
+                        // Show message that the game is finished
+                        Pwinner.innerHTML = "Game finished";
+                        return;
+                    }
 
                     //The function then calls itself after a timeout of 500ms to repeatedly check for updates to the game status.
                     setTimeout(getGameStatus, 500);
@@ -340,6 +343,7 @@
                 rules!</button></p>
 
         <p id="Pwinner">The winner is the one who has the highest score!</p>
+
         <div class="info-text">
             <p id="turn">Turn</p>
             <p id="current-player">Current player</p>

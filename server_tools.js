@@ -49,8 +49,6 @@ exports.query = (sql, params, callback)=>{
         user: "root",
         password: "shoval2211",
         database: "Othello",
-        connectTimeout: 60000, // 60 seconds
-        acquireTimeout: 60000 // 60 seconds
     });
     conn.connect((err)=>{
         if(err){
